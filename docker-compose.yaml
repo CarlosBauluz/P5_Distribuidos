@@ -1,0 +1,15 @@
+
+services:
+  nodo1:
+    build: ./nodo
+    image: nodo:latest
+    ports: 
+      - "5000:5000"
+  nodo2:
+    image: nodo:latest
+    depends_on:
+      - nodo1
+  nodo3:
+    image: nodo:latest
+    depends_on:
+      - nodo1
