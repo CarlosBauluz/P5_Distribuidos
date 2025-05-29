@@ -47,3 +47,20 @@ Después se realiza el comando:
 docker compose down
 ```
 Por último se accede a docker y se borra manualmente la imagen residual que queda ahí guardada.
+
+### 5. Diagrama de Flujo
+
+```mermaid
+graph TD
+    A[Inicio] --> B[Nodo 1: Recibe solicitud /iniciar]
+    B --> C[Incrementa valor + INCREMENT]
+    C --> D[Guarda valor en historial]
+    D --> E{NEXT_NODE existe?}
+    E -->|Sí| F[Envía valor a siguiente nodo vía POST /process]
+    E -->|No| G[Envía valor a nodo1 vía POST /reset]
+    F --> H[Nodo siguiente: Recibe solicitud /process]
+    H --> C
+    G --> I[Nodo 1: Recibe solicitud /reset]
+    I --> J[Actualiza current_value y guarda en historial]
+    J --> K[Fin]
+```
