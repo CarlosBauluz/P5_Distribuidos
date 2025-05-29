@@ -21,23 +21,17 @@ Este proyecto implementa una aplicación distribuida de nodos que se pasan un va
 
 ## Pasos para ejecutar la aplicación
 
-### 1. Clonar el repositorio 
-
-```bash
-git clone https://github.com/CarlosBauluz/P5_Distribuidos.git
-cd https://github.com/CarlosBauluz/P5_Distribuidos.git
-```
-### 2. Comando para crear imagen, contenedores y ejecutarlo (Se ejecuta en la carpeta raiz)
+### 1. Comando para crear imagen, contenedores y ejecutarlo (Se ejecuta en la carpeta raiz)
 
 ```bash
 docker compose up
 ```
-### 3. Acceder al programa
+### 2. Acceder al programa
 
 Para acceder al programa se tendrá que acceder al localhost:5000 trás el docker compose up y ahí ya se podrá ejecutar.
 #### IMPORTANTE: PARA VER LOS VALORES ACTUALIZADOS EN LA PESTAÑA, HAY QUE RECARGARLA MANUALMENTE
 
-### 4. Desinstalar/Borrar el programa
+### 3. Desinstalar/Borrar el programa
 
 Lo primero es realizar control + c
 
@@ -48,7 +42,7 @@ docker compose down
 ```
 Por último se accede a docker y se borra manualmente la imagen residual que queda ahí guardada.
 
-### 5. Diagrama de Flujo
+### 4. Diagrama de Flujo
 
 ```mermaid
 graph TD
