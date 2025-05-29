@@ -1,15 +1,34 @@
+version: '3.8'
 
 services:
   nodo1:
     build: ./nodo
     image: nodo:latest
-    ports: 
+    ports:
       - "5000:5000"
+    environment:
+      - NODE_NAME=nodo1
+      - INCREMENT=1
+      - NEXT_NODE=http://nodo2:5000
+
   nodo2:
     image: nodo:latest
     depends_on:
       - nodo1
+    ports:
+      - "5001:5000"
+    environment:
+      - NODE_NAME=nodo2
+      - INCREMENT=2
+      - NEXT_NODE=http://nodo3:5000
+
   nodo3:
     image: nodo:latest
     depends_on:
-      - nodo1
+      - nodo2
+    ports:
+      - "5002:5000"
+    environment:
+      - NODE_NAME=nodo3
+      - INCREMENT=3
+      # Último nodo: no se define NEXT_NODE
