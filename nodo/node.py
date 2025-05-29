@@ -53,7 +53,6 @@ def iniciar():
     value = current_value
 
     try:
-        # Enviar internamente una petición POST a /process con el valor actual
         response = app.test_client().post('/process', json={"value": value})
         if response.status_code == 204:
             return '', 204
@@ -69,7 +68,6 @@ def process():
     value = data.get("value", 0)
     source = data.get("source", None)
 
-    # Aplicar incremento y guardar en historial
     value += INCREMENT
     current_value = value
     history.append(value)
@@ -77,7 +75,6 @@ def process():
     print(f"[{NODE_NAME}] Recibido: {data.get('value')} → +{INCREMENT} = {value}")
 
     if NEXT_NODE:
-        # Enviar al siguiente nodo
         try:
             response = requests.post(
                 f"{NEXT_NODE}/process", 
@@ -87,7 +84,6 @@ def process():
         except Exception as e:
             return jsonify({"error": str(e)}), 500
     else:
-        # Nodo3 → volver a nodo1
         try:
             print(f"[{NODE_NAME}] Enviando resultado final {value} de vuelta a nodo1")
             response = requests.post("http://nodo1:5000/reset", json={"value": value})
