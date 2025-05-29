@@ -1,16 +1,14 @@
-from flask import Flask, request, render_template_string, jsonify
-from flask_socketio import SocketIO
-import os
+from flask import Flask, request, jsonify, render_template_string
 import requests
+import os
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'secret!'
-socketio = SocketIO(app, cors_allowed_origins="*")
 
 NODE_NAME = os.environ.get("NODE_NAME", "nodo1")
-NEXT_NODE = os.environ.get("NEXT_NODE") 
+NEXT_NODE = os.environ.get("NEXT_NODE")
 INCREMENT = int(os.environ.get("INCREMENT", 1))
 
+# Estado interno
 current_value = 0
 history = []
 
@@ -19,34 +17,17 @@ HTML_TEMPLATE = """
 <html>
 <head>
     <title>{{ node_name }}</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            var socket = io();
-
-            socket.on('update', data => {
-                document.getElementById('valor').textContent = data.value;
-                let historial = document.getElementById('historial');
-                historial.innerHTML = '';
-                data.history.forEach(val => {
-                    let li = document.createElement('li');
-                    li.textContent = val;
-                    historial.appendChild(li);
-                });
-            });
-        });
-    </script>
 </head>
 <body>
     <h1>Soy {{ node_name }}</h1>
-    <p>Valor actual: <strong id="valor">{{ value }}</strong></p>
+    <p>Valor actual: <strong>{{ value }}</strong></p>
     {% if is_first_node %}
         <form method="post" action="/iniciar">
             <button type="submit">Iniciar flujo</button>
         </form>
     {% endif %}
     <h3>Historial:</h3>
-    <ul id="historial">
+    <ul>
     {% for val in history %}
         <li>{{ val }}</li>
     {% endfor %}
@@ -54,6 +35,7 @@ HTML_TEMPLATE = """
 </body>
 </html>
 """
+
 
 @app.route('/', methods=["GET"])
 def home():
@@ -69,49 +51,61 @@ def home():
 def iniciar():
     global current_value
     value = current_value
-    return process_value(value)
+
+    try:
+        # Enviar internamente una petición POST a /process con el valor actual
+        response = app.test_client().post('/process', json={"value": value})
+        if response.status_code == 204:
+            return '', 204
+        else:
+            return jsonify({"error": "Error iniciando flujo"}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/process', methods=['POST'])
 def process():
+    global current_value
     data = request.get_json()
     value = data.get("value", 0)
-    return process_value(value)
+    source = data.get("source", None)
 
-def process_value(value):
-    global current_value
+    # Aplicar incremento y guardar en historial
     value += INCREMENT
     current_value = value
     history.append(value)
-    print(f"[{NODE_NAME}] Valor actualizado a {value}")
 
-    socketio.emit('update', {'value': current_value, 'history': list(reversed(history))})
+    print(f"[{NODE_NAME}] Recibido: {data.get('value')} → +{INCREMENT} = {value}")
 
     if NEXT_NODE:
+        # Enviar al siguiente nodo
         try:
-            requests.post(f"{NEXT_NODE}/process", json={"value": value})
+            response = requests.post(
+                f"{NEXT_NODE}/process", 
+                json={"value": value, "source": source or NODE_NAME}
+            )
+            return '', 204
         except Exception as e:
-            print(f"[{NODE_NAME}] Error enviando a siguiente nodo: {e}")
+            return jsonify({"error": str(e)}), 500
     else:
+        # Nodo3 → volver a nodo1
         try:
-            requests.post("http://nodo1:5000/reset", json={"value": value})
+            print(f"[{NODE_NAME}] Enviando resultado final {value} de vuelta a nodo1")
+            response = requests.post("http://nodo1:5000/reset", json={"value": value})
+            return '', 204
         except Exception as e:
-            print(f"[{NODE_NAME}] Error enviando reset a nodo1: {e}")
-
-    return '', 204
+            return jsonify({"error": str(e)}), 500
 
 @app.route('/reset', methods=['POST'])
 def reset():
     global current_value
     data = request.get_json()
     value = data.get("value", 0)
+
+    print(f"[{NODE_NAME}] Reiniciando ciclo con valor: {value}")
     current_value = value
     history.append(value)
-    print(f"[{NODE_NAME}] Reiniciando ciclo con valor: {value}")
-    socketio.emit('update', {'value': current_value, 'history': list(reversed(history))})
+
     return '', 204
 
-if __name__ == '__main__':
-
-    import eventlet
-    eventlet.monkey_patch()
-    socketio.run(app, host="0.0.0.0", port=5000)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
